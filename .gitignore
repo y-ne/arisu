@@ -1,0 +1,16 @@
+.DS_Store
+
+# JetBrains
+.idea
+
+# Editors
+.zed
+.vscode
+
+# Rust
+/target
+
+# Env
+.env
+.env.*
+!.env.example
