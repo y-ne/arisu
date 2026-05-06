@@ -1,23 +1,41 @@
 mod db;
 mod handlers;
+mod models;
 
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
+use tower_sessions::{Expiry, SessionManagerLayer, cookie::time::Duration};
+use tower_sessions_sqlx_store::PostgresStore;
 
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-
     let pool = db::connect().await;
+
+    let session_store = PostgresStore::new(pool.clone());
+    session_store
+        .migrate()
+        .await
+        .expect("session store migration failed");
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::days(7)));
+
+    let auth_routes = Router::new().route("/register", post(handlers::auth::register));
 
     let app = Router::new()
         .route("/", get(handlers::root::root))
+        .nest("/auth", auth_routes)
+        .layer(session_layer)
         .with_state(pool);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000")
-        .await
-        .expect("failed to bind port 4000");
+    let port = std::env::var("PORT").unwrap_or_else(|_| "4000".to_string());
+    let addr = format!("0.0.0.0:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    println!("listening on http://{addr}");
 
-    println!("listening on http://0.0.0.0:4000");
-
-    axum::serve(listener, app).await.expect("server crashed");
+    axum::serve(listener, app).await.unwrap();
 }
