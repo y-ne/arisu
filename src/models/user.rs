@@ -18,7 +18,6 @@ pub struct User {
     pub username: String,
     pub display_name: String,
     #[serde(skip_serializing)]
-    #[allow(dead_code)]
     pub password_hash: String,
     pub role: UserRole,
     #[serde(with = "time::serde::rfc3339")]

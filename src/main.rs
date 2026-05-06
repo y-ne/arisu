@@ -24,7 +24,9 @@ async fn main() {
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::days(7)));
 
-    let auth_routes = Router::new().route("/register", post(handlers::auth::register));
+    let auth_routes = Router::new()
+        .route("/register", post(handlers::auth::register))
+        .route("/login", post(handlers::auth::login));
 
     let app = Router::new()
         .route("/", get(handlers::root::root))
