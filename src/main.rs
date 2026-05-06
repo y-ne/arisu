@@ -13,11 +13,11 @@ async fn main() {
         .route("/", get(handlers::root::root))
         .with_state(pool);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000")
         .await
-        .expect("failed to bind port 3000");
+        .expect("failed to bind port 4000");
 
-    println!("listening on http://0.0.0.0:3000");
+    println!("listening on http://0.0.0.0:4000");
 
     axum::serve(listener, app).await.expect("server crashed");
 }

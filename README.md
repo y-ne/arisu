@@ -4,7 +4,7 @@ Backend service for Alice. This backend was based on Wakimae's Ajisai.
 
 ## License
 
-Alice is licensed under the **GNU General Public License v3.0**.
+Arisu is licensed under the **GNU General Public License v3.0**.
 See the [LICENSE](./LICENSE) file for the full license text.
 
 This program is distributed in the hope that it will be useful,
