@@ -15,3 +15,6 @@ time = { version = "0.3", features = ["serde"] }
 argon2 = "0.5"
 tower-sessions = "0.14"
 tower-sessions-sqlx-store = { version = "0.15", features = ["postgres"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

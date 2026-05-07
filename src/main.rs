@@ -1,4 +1,5 @@
 mod db;
+mod error;
 mod handlers;
 mod models;
 
@@ -12,13 +13,15 @@ use tower_sessions_sqlx_store::PostgresStore;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+    tracing_subscriber::fmt::init();
+
     let pool = db::connect().await;
 
     let session_store = PostgresStore::new(pool.clone());
     session_store
         .migrate()
         .await
-        .expect("session store migration failed");
+        .expect("session migration failed");
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
@@ -39,7 +42,6 @@ async fn main() {
     let port = std::env::var("PORT").unwrap_or_else(|_| "4000".to_string());
     let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    println!("listening on http://{addr}");
-
+    tracing::info!("listening on http://{addr}");
     axum::serve(listener, app).await.unwrap();
 }

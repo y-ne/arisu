@@ -2,13 +2,13 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use axum::response::IntoResponse;
 use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use sqlx::PgPool;
 use tower_sessions::Session;
 use uuid::Uuid;
 
+use crate::error::AppError;
 use crate::models::user::User;
 
 const USER_ID_KEY: &str = "user_id";
@@ -29,12 +29,12 @@ pub struct LoginRequest {
 pub async fn register(
     State(pool): State<PgPool>,
     Json(req): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<User>), StatusCode> {
+) -> Result<(StatusCode, Json<User>), AppError> {
     if req.username.trim().is_empty()
         || req.display_name.trim().is_empty()
         || req.password.len() < 8
     {
-        return Err(StatusCode::BAD_REQUEST);
+        return Err(AppError::BadRequest);
     }
 
     let password_hash = hash_password(&req.password)?;
@@ -56,14 +56,7 @@ pub async fn register(
         password_hash,
     )
     .fetch_one(&pool)
-    .await
-    .map_err(|e| match e {
-        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => StatusCode::CONFLICT,
-        _ => {
-            eprintln!("register db error: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR
-        }
-    })?;
+    .await?;
 
     Ok((StatusCode::CREATED, Json(user)))
 }
@@ -72,7 +65,7 @@ pub async fn login(
     State(pool): State<PgPool>,
     session: Session,
     Json(req): Json<LoginRequest>,
-) -> Result<Json<User>, StatusCode> {
+) -> Result<Json<User>, AppError> {
     let user = sqlx::query_as!(
         User,
         r#"
@@ -86,26 +79,20 @@ pub async fn login(
         req.username,
     )
     .fetch_optional(&pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::UNAUTHORIZED)?;
+    .await?
+    .ok_or(AppError::Unauthorized)?;
 
     verify_password(&req.password, &user.password_hash)?;
-
-    session
-        .insert(USER_ID_KEY, user.id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    session.insert(USER_ID_KEY, user.id).await?;
 
     Ok(Json(user))
 }
 
-pub async fn me(State(pool): State<PgPool>, session: Session) -> Result<Json<User>, StatusCode> {
+pub async fn me(State(pool): State<PgPool>, session: Session) -> Result<Json<User>, AppError> {
     let user_id: Uuid = session
         .get(USER_ID_KEY)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+        .await?
+        .ok_or(AppError::Unauthorized)?;
 
     let user = sqlx::query_as!(
         User,
@@ -120,29 +107,31 @@ pub async fn me(State(pool): State<PgPool>, session: Session) -> Result<Json<Use
         user_id,
     )
     .fetch_optional(&pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::UNAUTHORIZED)?;
+    .await?
+    .ok_or(AppError::Unauthorized)?;
 
     Ok(Json(user))
 }
 
-pub async fn logout(session: Session) -> impl IntoResponse {
+pub async fn logout(session: Session) -> StatusCode {
     let _ = session.flush().await;
     StatusCode::NO_CONTENT
 }
 
-fn hash_password(password: &str) -> Result<String, StatusCode> {
+fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map(|h| h.to_string())
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|e| {
+            tracing::error!("hash error: {e}");
+            AppError::Internal
+        })
 }
 
-fn verify_password(password: &str, hash: &str) -> Result<(), StatusCode> {
-    let parsed = PasswordHash::new(hash).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+fn verify_password(password: &str, hash: &str) -> Result<(), AppError> {
+    let parsed = PasswordHash::new(hash).map_err(|_| AppError::Unauthorized)?;
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
-        .map_err(|_| StatusCode::UNAUTHORIZED)
+        .map_err(|_| AppError::Unauthorized)
 }
