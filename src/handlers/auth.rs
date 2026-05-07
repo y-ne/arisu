@@ -2,6 +2,7 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
+use axum::response::IntoResponse;
 use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -97,6 +98,38 @@ pub async fn login(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(user))
+}
+
+pub async fn me(State(pool): State<PgPool>, session: Session) -> Result<Json<User>, StatusCode> {
+    let user_id: Uuid = session
+        .get(USER_ID_KEY)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT
+            id, username, display_name, password_hash,
+            role AS "role: _",
+            created_at, updated_at, deleted_at
+        FROM users
+        WHERE id = $1 AND deleted_at IS NULL
+        "#,
+        user_id,
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    Ok(Json(user))
+}
+
+pub async fn logout(session: Session) -> impl IntoResponse {
+    let _ = session.flush().await;
+    StatusCode::NO_CONTENT
 }
 
 fn hash_password(password: &str) -> Result<String, StatusCode> {

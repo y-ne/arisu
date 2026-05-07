@@ -26,7 +26,9 @@ async fn main() {
 
     let auth_routes = Router::new()
         .route("/register", post(handlers::auth::register))
-        .route("/login", post(handlers::auth::login));
+        .route("/login", post(handlers::auth::login))
+        .route("/me", get(handlers::auth::me))
+        .route("/logout", post(handlers::auth::logout));
 
     let app = Router::new()
         .route("/", get(handlers::root::root))

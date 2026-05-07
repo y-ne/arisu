@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id, username, display_name, password_hash,\n            role AS \"role: _\",\n            created_at, updated_at, deleted_at\n        FROM users\n        WHERE id = $1 AND deleted_at IS NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "password_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "role: _",
+        "type_info": {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "administrator",
+                "moderator",
+                "member"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "deleted_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0271ff854b68c059582d5d3f193f5f4d244a255258640c2747f6bf78e476cf08"
+}
