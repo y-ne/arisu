@@ -5,7 +5,7 @@ mod models;
 
 use axum::{
     Router,
-    routing::{get, post},
+    routing::{get, patch, post},
 };
 use tower_sessions::{Expiry, SessionManagerLayer, cookie::time::Duration};
 use tower_sessions_sqlx_store::PostgresStore;
@@ -33,9 +33,20 @@ async fn main() {
         .route("/me", get(handlers::auth::me))
         .route("/logout", post(handlers::auth::logout));
 
+    let camera_routes = Router::new()
+        .route(
+            "/",
+            get(handlers::cameras::list).post(handlers::cameras::create),
+        )
+        .route(
+            "/{id}",
+            patch(handlers::cameras::update).delete(handlers::cameras::delete),
+        );
+
     let app = Router::new()
         .route("/", get(handlers::root::root))
         .nest("/auth", auth_routes)
+        .nest("/cameras", camera_routes)
         .layer(session_layer)
         .with_state(pool);
 

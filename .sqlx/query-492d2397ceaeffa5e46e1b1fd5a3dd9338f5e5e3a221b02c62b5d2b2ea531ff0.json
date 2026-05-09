@@ -1,0 +1,81 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE cameras\n        SET\n            name = COALESCE($2, name),\n            uri = COALESCE($3, uri),\n            latitude = COALESCE($4, latitude),\n            longitude = COALESCE($5, longitude),\n            is_active = COALESCE($6, is_active),\n            updated_at = NOW()\n        WHERE id = $1 AND deleted_at IS NULL\n        RETURNING\n            id, name, uri, latitude, longitude, is_active,\n            created_by, created_at, updated_at, deleted_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "latitude",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "longitude",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "492d2397ceaeffa5e46e1b1fd5a3dd9338f5e5e3a221b02c62b5d2b2ea531ff0"
+}

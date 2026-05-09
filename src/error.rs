@@ -10,6 +10,12 @@ pub enum AppError {
     #[error("unauthorized")]
     Unauthorized,
 
+    #[error("forbidden")]
+    Forbidden,
+
+    #[error("not found")]
+    NotFound,
+
     #[error(transparent)]
     Sqlx(#[from] sqlx::Error),
 
@@ -25,6 +31,8 @@ impl IntoResponse for AppError {
         let status = match &self {
             AppError::BadRequest => StatusCode::BAD_REQUEST,
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
+            AppError::Forbidden => StatusCode::FORBIDDEN,
+            AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::Sqlx(sqlx::Error::Database(e)) if e.is_unique_violation() => {
                 StatusCode::CONFLICT
             }

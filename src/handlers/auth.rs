@@ -9,9 +9,8 @@ use tower_sessions::Session;
 use uuid::Uuid;
 
 use crate::error::AppError;
+use crate::handlers::USER_ID_KEY;
 use crate::models::user::User;
-
-const USER_ID_KEY: &str = "user_id";
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
